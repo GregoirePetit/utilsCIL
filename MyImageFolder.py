@@ -59,13 +59,16 @@ class ImagesListFileFolder(data.Dataset):
         self.return_path = return_path
         samples = []
         df = pd.read_csv(images_list_file, sep=' ', names=['paths','class'])
+        root_folder = df['paths'].head(1)[0]
+        #print(root_folder)
+        df = df.tail(df.shape[0] -1)
         df.drop_duplicates()
         if sort_by_class:
             df = df.sort_values('class')
         if range_classes:
-            samples = list(map(tuple, df.loc[df['class'].isin(list(range_classes))].values.tolist()))
+            samples = [(os.path.join(root_folder, elt[0]),elt[1]) for elt in list(map(tuple, df.loc[df['class'].isin(list(range_classes))].values.tolist()))]
         else:
-            samples = list(map(tuple, df.values.tolist()))
+            samples = [(os.path.join(root_folder, elt[0]),elt[1]) for elt in list(map(tuple, df.values.tolist()))]
         if not samples:
             raise(RuntimeError("No image found"))
 
