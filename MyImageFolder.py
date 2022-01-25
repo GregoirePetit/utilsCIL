@@ -4,6 +4,7 @@ import  imghdr
 import pandas as pd
 import os, sys
 import os.path
+import random
 
 
 def has_file_allowed_extension(filename, extensions):
@@ -54,21 +55,27 @@ class ImagesListFileFolder(data.Dataset):
     """
 
 
-    def __init__(self, images_list_file, transform=None, target_transform=None, return_path=False, range_classes=None, sort_by_class=False):
+    def __init__(self, images_list_file, transform=None, target_transform=None, return_path=False, range_classes=None, random_seed=None):
 
         self.return_path = return_path
         samples = []
         df = pd.read_csv(images_list_file, sep=' ', names=['paths','class'])
         root_folder = df['paths'].head(1)[0]
-        #print(root_folder)
         df = df.tail(df.shape[0] -1)
         df.drop_duplicates()
-        if sort_by_class:
-            df = df.sort_values('class')
+        df = df.sort_values('class')
+        order_list = list(set(df['class'].values.tolist()))
+        if random_seed != None:
+            random.seed(random_seed)
+            random.shuffle(order_list)
+        order_list_reverse = [order_list.index(i) for i in list(set(df['class'].values.tolist()))]
         if range_classes:
-            samples = [(os.path.join(root_folder, elt[0]),elt[1]) for elt in list(map(tuple, df.loc[df['class'].isin(list(range_classes))].values.tolist()))]
+            index_to_take = [order_list[i] for i in range_classes]
+            samples = [(os.path.join(root_folder, elt[0]),order_list_reverse[elt[1]]) for elt in list(map(tuple, df.loc[df['class'].isin(index_to_take)].values.tolist()))]
+            samples.sort(key=lambda x:x[1])
         else:
-            samples = [(os.path.join(root_folder, elt[0]),elt[1]) for elt in list(map(tuple, df.values.tolist()))]
+            samples = [(os.path.join(root_folder, elt[0]),order_list_reverse[elt[1]]) for elt in list(map(tuple, df.values.tolist()))]
+            samples.sort(key=lambda x:x[1])
         if not samples:
             raise(RuntimeError("No image found"))
 
