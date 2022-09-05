@@ -1,3 +1,4 @@
+import numpy as np
 import torch.utils.data as data
 from PIL import Image
 import  imghdr
@@ -55,19 +56,30 @@ class ImagesListFileFolder(data.Dataset):
     """
 
 
-    def __init__(self, images_list_file, transform=None, target_transform=None, return_path=False, range_classes=None, random_seed=None):
+    def __init__(self, images_list_file, transform=None, target_transform=None, return_path=False, range_classes=None, random_seed=-1, old_load=False):
 
         self.return_path = return_path
         samples = []
         df = pd.read_csv(images_list_file, sep=' ', names=['paths','class'])
-        root_folder = df['paths'].head(1)[0]
-        df = df.tail(df.shape[0] -1)
+        if old_load:
+            root_folder = ''
+        else:
+            root_folder = df['paths'].head(1)[0]
+            df = df.tail(df.shape[0] -1)
         df.drop_duplicates()
+        #df = df.sample(frac=0.15)
         df = df.sort_values('class')
-        order_list = list(set(df['class'].values.tolist()))
-        if random_seed != None:
-            random.seed(random_seed)
+        order_list = [i for i in range(1+max(list(set(df['class'].values.tolist()))))]
+        print(order_list[:5],order_list[-5:])
+        if random_seed != -1:
+            np.random.seed(random_seed)
+            #random.seed(random_seed)
             random.shuffle(order_list)
+            order_list = np.random.permutation(len(order_list)).tolist()
+        #order_list=[53, 37, 65, 51, 4, 20, 38, 9, 10, 81, 44, 36, 84, 50, 96, 90, 66, 16, 80, 33, 24, 52, 91, 99, 64, 5, 58, 76, 39, 79, 23, 94, 30, 73, 25, 47, 31, 45, 19, 87, 42, 68, 95, 21, 7, 67, 46, 82, 11, 6, 41, 86, 88, 70, 18, 78, 71, 59, 43, 61, 22, 14, 35, 93, 56, 28, 98, 54, 27, 89, 1, 69, 74, 2, 85, 40, 13, 75, 29, 34, 92, 0, 77, 55, 49, 3, 62, 12, 26, 48, 83, 60, 57, 63, 15, 32, 8, 97, 72, 17]
+        #order_list=[68, 56, 78, 8, 23, 84, 90, 65, 74, 76, 40, 89, 3, 92, 55, 9, 26, 80, 43, 38, 58, 70, 77, 1, 85, 19, 17, 50, 28, 53, 13, 81, 45, 82, 6, 59, 83, 16, 15, 44, 91, 41, 72, 60, 79, 52, 20, 10, 31, 54, 37, 95, 14, 71, 96, 98, 97, 2, 64, 66, 42, 22, 35, 86, 24, 34, 87, 21, 99, 0, 88, 27, 18, 94, 11, 12, 47, 25, 30, 46, 62, 69, 36, 61, 7, 63, 75, 5, 32, 4, 51, 48, 73, 93, 39, 67, 29, 49, 57, 33]
+        #order_list=[34, 37, 71, 58, 2, 70, 28, 17, 75, 25, 82, 77, 55, 8, 6, 91, 87, 64, 52, 40, 11, 36, 10, 90, 38, 88, 47, 74, 94, 20, 26, 53, 81, 54, 78, 48, 72, 66, 5, 12, 83, 30, 16, 43, 93, 97, 84, 76, 98, 31, 92, 50, 69, 67, 27, 3, 86, 7, 60, 23, 59, 46, 62, 1, 68, 63, 99, 22, 49, 15, 32, 96, 80, 41, 95, 13, 18, 9, 29, 65, 24, 0, 56, 39, 85, 35, 89, 45, 73, 51, 19, 44, 42, 21, 14, 4, 57, 33, 79, 61]
+        print(order_list[:5],order_list[-5:])
         order_list_reverse = [order_list.index(i) for i in list(set(df['class'].values.tolist()))]
         if range_classes:
             index_to_take = [order_list[i] for i in range_classes]
