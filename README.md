@@ -22,5 +22,5 @@ train_loader = torch.utils.data.DataLoader(
     pin_memory=True)
 ```
 - [Utils.py](https://github.com/GregoirePetit/utilsCIL/blob/main/Utils.py): Utility functions for CIL.
-- [modified_resnet.py]((https://github.com/GregoirePetit/utilsCIL/blob/main/modified_resnet.py): Custom ResNet model with different architectures, from [Learning a Unified Classifier Incrementally via Rebalancing](https://github.com/hshustc/CVPR19_Incremental_Learning/blob/master/imagenet-class-incremental/modified_resnet.py)
-- [modified_linear.py]((https://github.com/GregoirePetit/utilsCIL/blob/main/modified_linear.py): Custom linear model with different architectures, from [Learning a Unified Classifier Incrementally via Rebalancing](https://github.com/hshustc/CVPR19_Incremental_Learning/blob/master/imagenet-class-incremental/modified_linear.py)
+- [modified_resnet.py](https://github.com/GregoirePetit/utilsCIL/blob/main/modified_resnet.py): Custom ResNet model with different architectures, from [Learning a Unified Classifier Incrementally via Rebalancing](https://github.com/hshustc/CVPR19_Incremental_Learning/blob/master/imagenet-class-incremental/modified_resnet.py)
+- [modified_linear.py](https://github.com/GregoirePetit/utilsCIL/blob/main/modified_linear.py): Custom linear model with different architectures, from [Learning a Unified Classifier Incrementally via Rebalancing](https://github.com/hshustc/CVPR19_Incremental_Learning/blob/master/imagenet-class-incremental/modified_linear.py)
