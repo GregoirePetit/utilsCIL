@@ -1,6 +1,6 @@
 class AverageMeter(object):
     """Computes and stores the average and current value
-       Imported from https://github.com/pytorch/examples/blob/master/imagenet/main.py#L247-L262
+       Imported from https://github.com/pytorch/examples/blob/master/imagenet/main.py#L420-L438
     """
     def __init__(self):
         self.reset()

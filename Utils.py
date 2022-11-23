@@ -1,8 +1,4 @@
-import sys, numpy, random, re, os
-# from MyStaticSamplers import *
-import numpy as np
-from tqdm import tqdm
-
+import sys, re
 
 class DataUtils():
     def __init__(self):
