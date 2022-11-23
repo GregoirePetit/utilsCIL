@@ -22,3 +22,4 @@ train_loader = torch.utils.data.DataLoader(
     pin_memory=True)
 ```
 - [Utils.py](https://github.com/GregoirePetit/utilsCIL/blob/main/Utils.py): Utility functions for CIL.
+- [modified_*.py]((https://github.com/GregoirePetit/utilsCIL/blob/main/modified_resnet.py): Custom ResNet models with different architectures, from [Learning a Unified Classifier Incrementally via Rebalancing](https://github.com/hshustc/CVPR19_Incremental_Learning/tree/master/imagenet-class-incremental)
