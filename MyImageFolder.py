@@ -86,7 +86,7 @@ class ImagesListFileFolder(data.Dataset):
         self.targets = [s[1] for s in samples]
         self.transform = transform
         self.target_transform = target_transform
-
+        self.imgs = [s[0] for s in samples]
 
     def __getitem__(self, index):
         """
