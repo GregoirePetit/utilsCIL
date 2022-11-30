@@ -22,6 +22,8 @@ class DataUtils():
         # get the term to term matches with the target labels + condition target true
         match = (multilabel_pred == target)*target # size batch_size * num_total_classes
         #print("DEBUG 2 : ", torch.sum(match))
+        
+        ### SEPARATED - exact match 
         # split the tensor into fine and coarse component
         match_fine = match[:, :split_index]
         match_coarse = match[:, split_index:]
@@ -38,7 +40,12 @@ class DataUtils():
         acc_fine = torch.sum(n_match_fine)*100.0/batch_size
         acc_coarse = torch.sum(n_match_coarse)*100.0/batch_size
         #print(acc_fine, acc_coarse)
-        return acc_fine, acc_coarse
+        ### BOTH - exact match
+        n_match_both = torch.sum(match, dim=1)==2.0 # exact matches on both fine and coarse labels
+        acc_both = torch.sum(n_match_both)*100.0/batch_size
+        
+        res = [acc_fine, acc_coarse, acc_both]
+        return res
 
     def accuracy(self, output, target, topk=(1,)):
         """Computes the precision@k for the specified values of k"""
