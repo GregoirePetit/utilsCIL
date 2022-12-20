@@ -156,8 +156,16 @@ class ImagesListFileFolderMultilabel(data.Dataset):
     """
 
 
-    def __init__(self, images_list_file, transform=None, target_transform=None, return_path=False, range_classes=None, random_seed=-1, old_load=False, open_images=False):
-
+    def __init__(self, images_list_file, transform=None, target_transform=None, return_path=False, range_classes=None, random_seed=-1, old_load=False, open_images=False, num_labels=None):
+        # images_list_file is a the root path of the list
+        # transform is the transform to apply to the image
+        # target_transform is the transform to apply to the target
+        # return_path is a boolean to return the path of the image
+        # range_classes is a range of the classes to take
+        # random_seed is the seed to shuffle the classes
+        # old_load is a boolean to load the list with the old way (i.e. without the root folder as first line)
+        # open_images is a boolean to load the list with the open images format
+        # num_labels is the number of labels to load (in case of more than 2 labels)
         self.return_path = return_path
         samples = []
         df = pd.read_csv(images_list_file, sep=' ', names=['paths','class'])
@@ -168,7 +176,11 @@ class ImagesListFileFolderMultilabel(data.Dataset):
             df = df.tail(df.shape[0] -1)
         df.drop_duplicates()
         # cast the class to tuple of int
-        df['class'] = df['class'].apply(lambda x: tuple(map(int, x.split(','))))
+        if num_labels is None:
+            df['class'] = df['class'].apply(lambda x: tuple(map(int, x.split(','))))
+        else:
+            df['class'] = df['class'].apply(lambda x: tuple(map(int, x.split(',')[:num_labels])))
+        #print(df)
         df = df.sort_values('class')
         order_list = list(set(df['class'].values.tolist()))
         # sort the list by the first item of the tuple
