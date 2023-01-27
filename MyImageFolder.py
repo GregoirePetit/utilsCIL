@@ -56,7 +56,7 @@ class ImagesListFileFolder(data.Dataset):
     """
 
 
-    def __init__(self, images_list_file, transform=None, target_transform=None, return_path=False, range_classes=None, random_seed=-1, old_load=False, open_images=False):
+    def __init__(self, images_list_file, transform=None, target_transform=None, return_path=False, range_classes=None, random_seed=-1, old_load=False, open_images=False, nb_classes=None):
 
         self.return_path = return_path
         samples = []
@@ -67,8 +67,12 @@ class ImagesListFileFolder(data.Dataset):
             root_folder = df['paths'].head(1)[0]
             df = df.tail(df.shape[0] -1)
         df.drop_duplicates()
+        df['class'] = df['class'].astype(int)
         df = df.sort_values('class')
-        order_list = [i for i in range(1+max(list(set(df['class'].values.tolist()))))]
+        if nb_classes:
+            order_list = [i for i in range(nb_classes)]
+        else:
+            order_list = [i for i in range(1+max(list(set(df['class'].values.tolist()))))]
         print('*'*(len(images_list_file)+76+len(str(random_seed))))
         print('Class order of',images_list_file,'before shuffle with seed',random_seed,': [',*order_list[:5],'...',*order_list[-5:],']')
         if random_seed != -1:
@@ -77,6 +81,8 @@ class ImagesListFileFolder(data.Dataset):
             order_list = np.random.permutation(len(order_list)).tolist()
         print('Class order of',images_list_file,'after  shuffle with seed',random_seed,': [',*order_list[:5],'...',*order_list[-5:],']')
         print('*'*(len(images_list_file)+76+len(str(random_seed))))
+        #print(list(set(df['class'].values.tolist())), '-> order_list')
+        #print(len(list(set(df['class'].values.tolist()))), '-> len(order_list)')
         order_list_reverse = [order_list.index(i) for i in list(set(df['class'].values.tolist()))]
         if range_classes:
             index_to_take = [order_list[i] for i in range_classes]
@@ -169,6 +175,7 @@ class ImagesListFileFolderMixup(data.Dataset):
             root_folder = df['paths'].head(1)[0]
             df = df.tail(df.shape[0] -1)
         df.drop_duplicates()
+        df['class'] = df['class'].astype(int)
         df = df.sort_values('class')
         order_list = [i for i in range(1+max(list(set(df['class'].values.tolist()))))]
         print('*'*(len(images_list_file)+76+len(str(random_seed))))
