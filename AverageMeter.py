@@ -42,10 +42,10 @@ class PerfMonitor():
         self.history.append(val)
 
     def save(self, save_path=None):
-        print("DEBUG")
-        print(self.history)
-        print(self.history[0])
-        print(type(self.history[0]))
+        #print("DEBUG saving perf monitor")
+        #print(self.history)
+        #print(self.history[0])
+        #print(type(self.history[0]))
         if save_path is not None : 
             with open(save_path, "wb") as file_path : 
                 pickle.dump(self.history, file_path)
@@ -72,12 +72,12 @@ class ConfusionMatrix(object):
         Within 1 epoch, count across batches of examples
         Within 1 incremental step, count across batches of examples
         """
-        assert(output.size() == target.size())
         #print("output : ", output.size())
         #print("target : ", target.size())
         batch_size = target.size(0)
         
         if self.multilabel == True : 
+            assert(output.size() == target.size())
             # get the predictions using the decision threshold
             multilabel_pred = (output > 0.5)*1.0
             #print(multilabel_pred)
@@ -87,14 +87,17 @@ class ConfusionMatrix(object):
                 #print("\nSample ", i)
                 #print("target_index ", target_index)
                 #print("pred_vect ", pred_vect)
-                print(self.matrix)           
+                #print(self.matrix)           
         
         else : # classic 1 label
             for i in range(batch_size) : 
                 pred = output 
-                target_index, pred_index = target[i], pred[i]
-                print(target_index, pred_index)
+                target_index, pred_index = target[i], torch.argmax(pred[i])
                 self.matrix[target_index][pred_index]+=1
+                #print("\nSample ", i)
+                #print("target_index ", target_index)  
+                #print("pred_index", pred_index)
+                #print(self.matrix)
         
         return None
 
