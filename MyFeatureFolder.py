@@ -64,6 +64,7 @@ class L4FeaturesDataset(Dataset):
         doss = np.sort(doss)
         for root_path in doss:
             if '_' in root_path:
+                #print(root_path, os.listdir(os.path.join(path, root_path)))
                 for file in os.listdir(os.path.join(path, root_path)):
                     self.y.append(int(root_path.split('_')[0]))
                     self.X.append(os.path.join(path, root_path, file))

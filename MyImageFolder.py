@@ -7,7 +7,8 @@ import os, sys
 import os.path
 import random
 import torch
-
+import multiprocessing as mp
+import shutil
 def has_file_allowed_extension(filename, extensions):
     """Checks if a file is an allowed extension.
     Args:
@@ -29,7 +30,24 @@ def is_image_file(filename):
     """
     return has_file_allowed_extension(filename, IMG_EXTENSIONS)
 
-
+def onscratch(images_list_file):
+    dataset = images_list_file.split('/')[-2]
+    data_type = 'train' if 'train.lst' in images_list_file else 'test'
+    df = pd.read_csv(images_list_file, sep=' ', names=['paths','class'])
+    root_folder = df['paths'].head(1)[0]
+    df = df.tail(df.shape[0] -1)
+    df.drop_duplicates()
+    df = df.sort_values('class')
+    train_list = df['paths'].tolist()
+    for elt in train_list:
+        parent_dir = os.path.join('/sscratch/dataset/',dataset,os.path.dirname(elt))
+        if not os.path.exists(parent_dir):
+            os.makedirs(parent_dir)
+    def copy_image(image):
+        shutil.copy(image, os.path.join('/sscratch/dataset/',dataset))
+    with mp.Pool() as pool:
+        pool.map(copy_image, train_list)
+    print(images_list_file, 'copied to /sscratch/dataset/',dataset)
 
 class ImagesListFileFolder(data.Dataset):
     """A generic data loader where the samples are arranged in this way: ::
@@ -56,7 +74,8 @@ class ImagesListFileFolder(data.Dataset):
     """
 
 
-    def __init__(self, images_list_file, transform=None, target_transform=None, return_path=False, range_classes=None, random_seed=-1, old_load=False, open_images=False, nb_classes=None):
+    def __init__(self, images_list_file, transform=None, target_transform=None, return_path=False, range_classes=None, random_seed=-1, old_load=False, open_images=False, nb_classes=None, onscratch=False, verbose=True):
+
 
         self.return_path = return_path
         samples = []
@@ -65,6 +84,9 @@ class ImagesListFileFolder(data.Dataset):
             root_folder = ''
         else:
             root_folder = df['paths'].head(1)[0]
+            if onscratch:
+                dataset = images_list_file.split('/')[-2]
+                root_folder = os.path.join('/sscratch/dataset/',dataset)
             df = df.tail(df.shape[0] -1)
         df.drop_duplicates()
         df['class'] = df['class'].astype(int)
@@ -73,14 +95,16 @@ class ImagesListFileFolder(data.Dataset):
             order_list = [i for i in range(nb_classes)]
         else:
             order_list = [i for i in range(1+max(list(set(df['class'].values.tolist()))))]
-        print('*'*(len(images_list_file)+76+len(str(random_seed))))
-        print('Class order of',images_list_file,'before shuffle with seed',random_seed,': [',*order_list[:5],'...',*order_list[-5:],']')
+        if verbose:
+            print('*'*(len(images_list_file)+76+len(str(random_seed))))
+            print('Class order of',images_list_file,'before shuffle with seed',random_seed,': [',*order_list[:5],'...',*order_list[-5:],']')
         if random_seed != -1:
             np.random.seed(random_seed)
             random.shuffle(order_list)
             order_list = np.random.permutation(len(order_list)).tolist()
-        print('Class order of',images_list_file,'after  shuffle with seed',random_seed,': [',*order_list[:5],'...',*order_list[-5:],']')
-        print('*'*(len(images_list_file)+76+len(str(random_seed))))
+        if verbose:
+            print('Class order of',images_list_file,'after  shuffle with seed',random_seed,': [',*order_list[:5],'...',*order_list[-5:],']')
+            print('*'*(len(images_list_file)+76+len(str(random_seed))))
         #print(list(set(df['class'].values.tolist())), '-> order_list')
         #print(len(list(set(df['class'].values.tolist()))), '-> len(order_list)')
         order_list_reverse = [order_list.index(i) for i in list(set(df['class'].values.tolist()))]
@@ -88,7 +112,9 @@ class ImagesListFileFolder(data.Dataset):
             index_to_take = [order_list[i] for i in range_classes]
             samples = [(os.path.join(root_folder, elt[0]),order_list_reverse[elt[1]]) for elt in list(map(tuple, df.loc[df['class'].isin(index_to_take)].values.tolist()))]
             samples.sort(key=lambda x:x[1])
-            print('We pick the classes from', min(range_classes), 'to', max(range_classes), 'and we have', len(samples), 'samples')
+            if verbose:
+                print('We pick the classes from', min(range_classes), 'to', max(range_classes), 'and we have', len(samples), 'samples')
+                print('We have', len(list(set(df['class'].values.tolist()))), 'classes in total')
         else:
             samples = [(os.path.join(root_folder, elt[0]),order_list_reverse[elt[1]]) for elt in list(map(tuple, df.values.tolist()))]
             samples.sort(key=lambda x:x[1])
@@ -402,3 +428,93 @@ def default_loader(path):
         return pil_loader(path)
 
 
+
+
+
+
+
+class ImagesListFolderIndexRemind(data.Dataset):
+    """A generic data loader where the samples are arranged in this way: ::
+        root/class_x/xxx.ext
+        root/class_x/xxy.ext
+        root/class_x/xxz.ext
+        root/class_y/123.ext
+        root/class_y/nsdf3.ext
+        root/class_y/asd932_.ext
+    Args:
+        root (string): Root directory path.
+        loader (callable): A function to load a sample given its path.
+        extensions (list[string]): A list of allowed extensions.
+        transform (callable, optional): A function/transform that takes in
+            a sample and returns a transformed version.
+            E.g, ``transforms.RandomCrop`` for images.
+        target_transform (callable, optional): A function/transform that takes
+            in the target and transforms it.
+     Attributes:
+        classes (list): List of the class names.
+        class_to_idx (dict): Dict with items (class_name, class_index).
+        samples (list): List of (sample path, class_index) tuples
+        targets (list): The class_index value for each image in the dataset
+    """
+
+
+    def __init__(self, images_list_file, indices, return_item_ix, transform=None, target_transform=None):
+
+        samples = []
+        df = pd.read_csv(images_list_file, sep=' ', names=['paths','class'])
+        root_folder = df['paths'].head(1)[0]
+        df = df.tail(df.shape[0] -1)
+        df.drop_duplicates()
+        df['class'] = df['class'].astype(int)
+        df = df.sort_values('class')
+        
+        order_list = [i for i in range(1+max(list(set(df['class'].values.tolist()))))]
+        order_list_reverse = [order_list.index(i) for i in list(set(df['class'].values.tolist()))]
+        samples = [(os.path.join(root_folder, elt[0]),order_list_reverse[elt[1]]) for elt in list(map(tuple, df.values.tolist()))]
+        samples.sort(key=lambda x:x[1])
+        if not samples:
+            raise(RuntimeError("No image found"))
+
+
+        self.loader = default_loader
+        self.extensions = IMG_EXTENSIONS
+        self.classes = list(set([e[1] for e in samples]))
+        self.samples = samples
+        self.targets = [s[1] for s in samples]
+        self.transform = transform
+        self.target_transform = target_transform
+        self.indices = indices
+        self.return_item_ix = return_item_ix
+
+
+    def __getitem__(self, index):
+        """
+        Args:
+            index (int): Index
+        Returns:
+            tuple: (sample, target) where target is class_index of the target class.
+        """
+        path, target = self.samples[index]
+        sample = self.loader(path)
+        if self.transform is not None:
+            sample = self.transform(sample)
+        if self.target_transform is not None:
+            target = self.target_transform(target)
+        if self.return_item_ix:
+            return sample, target, index
+        else:
+            return sample, target
+
+    def __len__(self):
+        # return len(self.samples)
+        return len(self.indices)
+
+    def __repr__(self):
+        fmt_str = 'Dataset ' + self.__class__.__name__ + '\n'
+        fmt_str += '    Number of datapoints: {}\n'.format(self.__len__())
+        fmt_str += '    Root Location: {}\n'.format(self.root)
+        tmp = '    Transforms (if any): '
+        fmt_str += '{0}{1}\n'.format(tmp, self.transform.__repr__().replace('\n', '\n' + ' ' * len(tmp)))
+        tmp = '    Target Transforms (if any): '
+        fmt_str += '{0}{1}'.format(tmp, self.target_transform.__repr__().replace('\n', '\n' + ' ' * len(tmp)))
+        return fmt_str
